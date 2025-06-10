@@ -1,9 +1,9 @@
 targetScope = 'subscription'
 
 param rgName string
-param location string = 'eastus'
+param location string 
 param keyVaultName string
-param skuName string = 'standard'
+param skuName string 
 
 resource keyVaultRg 'Microsoft.Resources/resourceGroups@2022-09-01' = {
   name: rgName
