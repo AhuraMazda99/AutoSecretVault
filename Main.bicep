@@ -1,5 +1,9 @@
+param object_id_keyvault string //add a admin account to have access 
 module keyvault 'Keyvault/Keyvault.bicep' = {
   name: 'keyvaultforsecrets'
+   params: {
+    object_id: object_id_keyvault
+  }
 }
 module automation_renew_secrets 'Logic App automated rotation/deploy_autorate_secrets.bicep' = {
   name: 'automation_renew_secrets'
