@@ -1,4 +1,4 @@
-# Automated Secret Lifecycle
+# AutoSecretVault
 
 This project demonstrates an automated approach for managing Azure service principal secrets. The Bicep templates deploy a Key Vault and Logic Apps that rotate and purge secrets on a schedule. After deployment, secrets are stored in the vault so that release pipelines can retrieve them when required.
 
