@@ -2,6 +2,18 @@
 
 This project demonstrates an automated approach for managing Azure service principal secrets. The Bicep templates deploy a Key Vault and Logic Apps that rotate and purge secrets on a schedule. After deployment, secrets are stored in the vault so that release pipelines can retrieve them when required.
 
+## Prerequisites
+
+- [Azure CLI](https://learn.microsoft.com/cli/azure/install-azure-cli) with Bicep support (`az bicep install`)
+- Permission to deploy resources in your Azure subscription
+- A service principal or user object ID to grant initial Key Vault access
+
+## Customization
+
+The JSON definitions used by the Logic Apps contain default schedules and placeholders. You can modify `Automation_rotate_secret.json` and `Automation_delete_secret.json` to adjust rotation frequency or filter which applications are targeted.
+Changes can be made after deploying the Logic app instead of changing the json if wanted using the logic app GUI. 
+
+
 ## How it Works
 
 1. **Key Vault Deployment**
