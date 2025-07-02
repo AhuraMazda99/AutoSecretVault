@@ -2,7 +2,7 @@ var location = 'westeurope'
 param object_id string 
 
 resource Keyvaultstoresecrets 'Microsoft.KeyVault/vaults@2024-12-01-preview' = {
-  name: 'placeholder'
+  name: 'keyvaultsecretautomation' //change to name the keyvault something diffrent
   location: location
   properties: {
     sku: {

@@ -10,38 +10,98 @@ This project demonstrates an automated approach for managing Azure service princ
 
 ## Customization
 
-The JSON definitions used by the Logic Apps contain default schedules and placeholders. You can modify `Automation_rotate_secret.json` and `Automation_delete_secret.json` to adjust rotation frequency or filter which applications are targeted.
-Changes can be made after deploying the Logic app instead of changing the json if wanted using the logic app GUI. 
+The JSON definitions used by the Logic Apps contain default schedules and filters. You can modify `Automation_rotate_secret.json` and `Automation_delete_secret.json` to adjust the rotation frequency or define which applications are targeted.
 
+Alternatively, make changes directly in the Logic App Designer after deployment.
 
-## How it Works
+---
 
-1. **Key Vault Deployment**
-   The `Keyvault` module provisions a vault that will contain the service principal secrets. Specify the object ID of an administrator in `Keyvault.bicep` so this user has initial access. After deployment, you'll grant the Logic App's managed identity access so it can write secrets directly.
+## Logic App: `Automation_rotate_secret`
+
+**Step: HTTP Get Token**  
+Add a `client_id` and `client_secret` from an app registration that has these permissions:
+
+- Application.ReadWrite.All  
+- Directory.ReadWrite.All  
+- User-PasswordProfile.ReadWrite.All  
+- User.ReadWrite.All
+
+**Step: HTTP 1 Get Application ID**  
+Filter which service principals to rotate. Example:
+
+```
+https://graph.microsoft.com/v1.0/applications?$filter=startswith(displayName,'production') or startswith(displayName,'test') or startswith(displayName,'hotfix')&$select=id,displayName,appId
+
+!! in logic apps Whitespaces must be encoded for URIs so the above needs to look like this https://graph.microsoft.com/v1.0/applications?$filter=startswith(displayName,%27production%27)%20or%20startswith(displayName,%27test%27)%20or%20startswith(displayName,%27hotfix%27)&$select=id,displayName,appId
+
+```
+
+Customize it to fit your naming convention. Start with a test service principal first.
+
+**Step: HTTP Create New Secret**  
+Set the `displayName` to define the secret name in the app registration.
+
+**Step: HTTP Post Password to Key Vault**  
+Use a managed identity (system or user-assigned) and make sure it has write access to the Key Vault.
+
+**Slack Notifications (Optional)**  
+You can replace or remove Slack steps that are at the end. Use email, Teams, or another alert method.
+
+---
+
+## Logic App: `Automation_delete_secret`
+
+This works similarly to the rotation app:
+
+- Use the same service principal and permissions for token retrieval.
+- Match the application name filter to your rotation app.
+- Add a failure alert at the end (email, Teams, or Slack).
+
+---
+
+## How It Works
+
+1. **Key Vault Deployment**  
+   `Keyvault.bicep` creates the vault. You grant initial access using an object ID. Then grant access to the Logic App’s managed identity.
+
 2. **Logic Apps**  
-   Two workflows are deployed:
-   - `deploy_autorate_secrets.bicep` rotates secrets on a recurring schedule.
-   - `deploy_delete_secrets.bicep` deletes old secrets after rotation.
+   - `deploy_autorate_secrets.bicep`: Rotates secrets on a schedule  
+   - `deploy_delete_secrets.bicep`: Deletes old secrets
+
 3. **Secret Storage**  
-   Once the solution is deployed, the names (or name prefixes) of the service principals to rotate are added to the Key Vault. The Logic Apps use these entries to update each service principal and store the new secrets back in the vault.
-4. **Secret Retrieval**
-   Pipelines or other consumers read updated secrets from this Key Vault using its URL and an identity with access.
+   Add matching service principal names or prefixes as Key Vault secrets. Logic Apps handle the rotation and storage.
+
+4. **Secret Retrieval**  
+   Pipelines and applications retrieve secrets using the Key Vault URL and proper identity access.
+
+---
 
 ## Deployment Steps
 
-1. Deploy the top-level `Main.bicep` template to create the Key Vault and Logic Apps.
-2. After deployment, add the names (or starting text) of each service principal you want rotated to the Key Vault as secrets. The Logic App will act on all matching service principals.
-3. Assign a managed identity to the Logic App and add its object ID to the Key Vault's access policies so the workflow can write secrets without using a service principal.
-4. Provide the Key Vault URL to the Automated rotation workflow. 
-5. deployment code
-    Code: 
-        az deployment sub create --location westeurope --template-file Main.bicep --parameters object_id_keyvault=<your-object-id-for-admin>
+1. Deploy with:
+   az deployment sub create \
+     --location westeurope \
+     --template-file Main.bicep \
+     --parameters object_id_keyvault= <your-object-id-for-admin>
 
+2. Add service principal prefixes to the Key Vault as secrets.
 
-This setup ensures service principal secrets are rotated automatically and available to your CI/CD workflows when needed.
+3. Assign a managed identity to the Logic App. Add it to the Key Vault access policy.
 
-Code to retrieve key from keyvault : az keyvault secret show --name <object id of the principal you want to retrieve> --vault-name <Keyvault name you deployed>
+4. Provide the Key Vault URL to the rotation Logic App.
+
+---
+
+## Retrieve a Secret
+
+```
+az keyvault secret show --name <secret-name> --vault-name <vault-name>
+```
+
+Use the name that corresponds to the target service principal client_id.
+
+---
 
 ## Future Improvement
 
-The Logic App currently uses a service principal to obtain an Azure AD token for Graph API calls. Moving these calls to a managed identity would remove the remaining dependence on a service principal.
+Replace the service principal used for Microsoft Graph authentication with a managed identity to simplify the setup.

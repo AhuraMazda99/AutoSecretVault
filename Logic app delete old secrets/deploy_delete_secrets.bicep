@@ -1,7 +1,7 @@
 var location = 'westeurope'
 
 resource delete_old_secrets 'Microsoft.Logic/workflows@2019-05-01' = {
-  name: 'placeholder'
+  name: 'automationdeleteoldsecrets' // change to name the logic app something diffrent
   tags: {
     placeholder: 'placeholder'
   }
