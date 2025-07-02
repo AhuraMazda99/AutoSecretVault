@@ -1,5 +1,5 @@
 var location = 'westeurope'
-var object_id = '' //add a admin account to have access 
+param object_id string 
 
 resource Keyvaultstoresecrets 'Microsoft.KeyVault/vaults@2024-12-01-preview' = {
   name: 'placeholder'
